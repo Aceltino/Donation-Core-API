@@ -1,0 +1,100 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run tests
+        run: pnpm test
+        env:
+          DATABASE_URL: postgresql://postgres:password@localhost:5432/transparencia_agil?schema=public
+          REDIS_URL: redis://localhost:6379
+          STRIPE_SECRET_KEY: sk_test_dummy
+          STRIPE_WEBHOOK_SECRET: whsec_dummy
+          AWS_REGION: us-east-1
+          LAMBDA_FUNCTION_NAME: dummy
+          DONATION_CORE_URL: http://localhost:3001
+          NEW_RELIC_LICENSE_KEY: dummy
+          NEW_RELIC_APP_NAME: dummy
+          NEW_RELIC_LOGGING_LEVEL: info
+          NEW_RELIC_DISTRIBUTED_TRACING_ENABLED: true
+
+  build-and-deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build apps
+        run: pnpm build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push Docker images
+        run: |
+          docker build -f Dockerfile.api-gateway -t ${{ steps.login-ecr.outputs.registry }}/transparencia-agil-api-gateway:latest .
+          docker build -f Dockerfile.donation-core -t ${{ steps.login-ecr.outputs.registry }}/transparencia-agil-donation-core:latest .
+          docker build -f Dockerfile.worker-hub -t ${{ steps.login-ecr.outputs.registry }}/transparencia-agil-worker-hub:latest .
+          docker push ${{ steps.login-ecr.outputs.registry }}/transparencia-agil-api-gateway:latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/transparencia-agil-donation-core:latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/transparencia-agil-worker-hub:latest
+
+      - name: Update ECS service
+        run: |
+          aws ecs update-service --cluster transparencia-agil-cluster --service api-gateway-service --force-new-deployment
+          aws ecs update-service --cluster transparencia-agil-cluster --service donation-core-service --force-new-deployment
+          aws ecs update-service --cluster transparencia-agil-cluster --service worker-hub-service --force-new-deployment

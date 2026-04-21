@@ -1,0 +1,15 @@
+packages:
+  - apps/*
+
+ignoredBuiltDependencies:
+  - '@datadog/pprof'
+  - '@nestjs/core'
+  - '@newrelic/fn-inspect'
+  - '@newrelic/native-metrics'
+  - '@prisma/client'
+  - '@prisma/engines'
+  - esbuild
+  - msgpackr-extract
+  - prisma
+  - protobufjs
+  - unrs-resolver

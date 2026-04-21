@@ -1,0 +1,83 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: transparencia-agil-postgres
+    environment:
+      POSTGRES_DB: donationdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: transparencia-agil-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  api-gateway:
+    build: 
+      context: .
+      dockerfile: Dockerfile.api-gateway
+    container_name: api-gateway-app
+    ports:
+      - "3001:3001"
+    depends_on:
+      - donation-core
+    env_file: .env
+    environment:
+      - PORTGATEWAY=3001
+      - DONATION_CORE_URL=http://donation-core-app:3000
+      - NEW_RELIC_APP_NAME=Transparencia-Agil-BFF
+      - NEW_RELIC_LICENSE_KEY=${NEW_RELIC_LICENSE_KEY}
+      - NEW_RELIC_NO_CONFIG_FILE=true
+      - NEW_RELIC_DISTRIBUTED_TRACING_ENABLED=true
+      - NEW_RELIC_LOGGING_LEVEL=info
+
+  donation-core:
+    build:
+      context: .
+      dockerfile: Dockerfile.donation-core
+    container_name: donation-core-app
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+      - redis
+    env_file: .env
+    environment:
+      - PORTDONATION=3000
+      - DATABASE_URL=postgresql://postgres:password@transparencia-agil-postgres:5432/donationdb
+      - REDIS_URL=redis://transparencia-agil-redis:6379
+      - NEW_RELIC_APP_NAME=Transparencia-Agil-Core
+      - NEW_RELIC_LICENSE_KEY=${NEW_RELIC_LICENSE_KEY}
+      - NEW_RELIC_NO_CONFIG_FILE=true
+      - NEW_RELIC_DISTRIBUTED_TRACING_ENABLED=true
+      - NEW_RELIC_LOGGING_LEVEL=info
+
+  worker-hub:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker-hub
+    container_name: worker-hub-app
+    ports:
+      - "3002:3002"
+    depends_on:
+      - redis
+    env_file: .env
+    environment:
+      - PORTWORKER=3002
+      - REDIS_URL=redis://transparencia-agil-redis:6379
+      - NEW_RELIC_APP_NAME=Transparencia-Agil-Worker
+      - NEW_RELIC_LICENSE_KEY=${NEW_RELIC_LICENSE_KEY}
+      - NEW_RELIC_NO_CONFIG_FILE=true
+      - NEW_RELIC_DISTRIBUTED_TRACING_ENABLED=true
+      - NEW_RELIC_LOGGING_LEVEL=info
+
+volumes:
+  postgres_data:
+  redis_data:

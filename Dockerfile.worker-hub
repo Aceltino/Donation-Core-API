@@ -1,0 +1,35 @@
+# BUILD STAGE
+FROM node:20-alpine AS builder
+RUN npm install -g pnpm
+WORKDIR /app
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/worker-hub/package.json ./apps/worker-hub/
+COPY apps/api-gateway/package.json ./apps/api-gateway/
+COPY apps/donation-core/package.json ./apps/donation-core/
+
+RUN pnpm install --frozen-lockfile
+COPY . .
+
+# Build
+RUN cd apps/worker-hub && pnpm exec nest build
+
+# PRODUCTION STAGE
+FROM node:20-alpine AS production
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV NEW_RELIC_NO_CONFIG_FILE=true
+
+# Instala dependências de produção
+RUN npm install -g pnpm
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/worker-hub/package.json ./apps/worker-hub/
+RUN pnpm install --prod --frozen-lockfile
+
+# Copia o build
+COPY --from=builder /app/apps/worker-hub/dist ./apps/worker-hub/dist
+COPY --from=builder /app/newrelic.js ./
+
+EXPOSE 3002
+CMD ["node", "apps/worker-hub/dist/main"]
