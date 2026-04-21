@@ -12,6 +12,8 @@ async function bootstrap() {
     .setDescription('Backend for Frontend for Transparent Donations')
     .setVersion('1.0')
     .addTag('donations', 'Donation management endpoints')
+    .addServer('http://localhost:3001', 'Local development')
+    .addServer('https://api.your-domain.com', 'Production')
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);

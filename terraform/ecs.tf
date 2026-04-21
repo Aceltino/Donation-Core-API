@@ -1,14 +1,14 @@
 # ECR Repositories
+# Procure por este bloco no arquivo ecs.tf
 resource "aws_ecr_repository" "repos" {
-  for_each = toset(var.ecr_repositories)
-  name     = each.value
+  for_each = toset(["api-gateway", "donation-core", "worker-hub"])
+  name     = each.key
+
+  # ESTA LINHA É A CHAVE: Deve estar DENTRO das chaves do recurso
+  force_delete = true 
 
   image_scanning_configuration {
     scan_on_push = true
-  }
-
-  tags = {
-    Name = "transparencia-agil-${each.value}"
   }
 }
 

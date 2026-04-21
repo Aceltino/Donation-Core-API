@@ -19,7 +19,7 @@ resource "aws_ecs_task_definition" "api_gateway" {
       essential = true
       environment = [
         { name = "PORT", value = "3000" },
-        { name = "DATABASE_URL", value = "postgresql://${var.db_username}:${var.db_password}@${aws_db_instance.postgres.endpoint}/${aws_db_instance.postgres.db_name}?schema=public" },
+        { name = "DATABASE_URL", value = "postgresql://${var.db_username}:${var.db_password}@${aws_db_instance.postgres.endpoint}/donationdb?schema=public" },        
         { name = "REDIS_URL", value = "redis://${aws_elasticache_cluster.redis.cache_nodes[0].address}:6379" },
         { name = "STRIPE_SECRET_KEY", value = var.stripe_secret_key },
         { name = "DONATION_CORE_URL", value = "http://${aws_lb.main.dns_name}" },
@@ -42,8 +42,8 @@ resource "aws_ecs_task_definition" "donation_core" {
   family                   = "donation-core-task"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = "256"
-  memory                   = "512"
+  cpu                      = "512"
+  memory                   = "1024"
   execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
 
   container_definitions = jsonencode([
@@ -53,7 +53,8 @@ resource "aws_ecs_task_definition" "donation_core" {
       essential = true
       environment = [
         { name = "PORT", value = "3000" },
-        { name = "DATABASE_URL", value = "postgresql://${var.db_username}:${var.db_password}@${aws_db_instance.postgres.endpoint}/${aws_db_instance.postgres.db_name}?schema=public" },
+        { name = "DATABASE_URL", value = "postgresql://${var.db_username}:${var.db_password}@${aws_db_instance.postgres.endpoint}/donationdb?schema=public" },        
+        { name = "REDIS_URL", value = "redis://${aws_elasticache_cluster.redis.cache_nodes[0].address}:6379" },
         { name = "STRIPE_SECRET_KEY", value = var.stripe_secret_key },
         { name = "STRIPE_WEBHOOK_SECRET", value = var.stripe_webhook_secret },
         { name = "NEW_RELIC_LICENSE_KEY", value = var.new_relic_license_key },
@@ -132,8 +133,9 @@ resource "aws_ecs_service" "worker_hub_svc" {
   desired_count   = 1
   launch_type     = "FARGATE"
 
-  network_configuration {
-    subnets          = aws_subnet.public[*].id
-    assign_public_ip = true
-  }
+network_configuration {
+  subnets          = aws_subnet.public[*].id
+  assign_public_ip = true
+  security_groups  = [aws_security_group.ecs_tasks.id] # Garanta que esta linha esteja assim
+}
 }

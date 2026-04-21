@@ -49,9 +49,10 @@ services:
       - postgres
       - redis
     env_file: .env
+    command: node apps/donation-core/dist/src/main.js
     environment:
       - PORTDONATION=3000
-      - DATABASE_URL=postgresql://postgres:password@transparencia-agil-postgres:5432/donationdb
+      - DATABASE_URL=${DATABASE_URL}
       - REDIS_URL=redis://transparencia-agil-redis:6379
       - NEW_RELIC_APP_NAME=Transparencia-Agil-Core
       - NEW_RELIC_LICENSE_KEY=${NEW_RELIC_LICENSE_KEY}
@@ -71,7 +72,7 @@ services:
     env_file: .env
     environment:
       - PORTWORKER=3002
-      - REDIS_URL=redis://transparencia-agil-redis:6379
+      - REDIS_URL=${REDIS_URL}
       - NEW_RELIC_APP_NAME=Transparencia-Agil-Worker
       - NEW_RELIC_LICENSE_KEY=${NEW_RELIC_LICENSE_KEY}
       - NEW_RELIC_NO_CONFIG_FILE=true

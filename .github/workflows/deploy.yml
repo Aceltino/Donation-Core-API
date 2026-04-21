@@ -134,11 +134,6 @@ jobs:
           docker push $REGISTRY/donation-core:latest
           docker push $REGISTRY/worker-hub:latest
 
-      - name: Run Prisma Migrations
-        run: |
-          export DATABASE_URL="postgresql://postgres:${{ secrets.DB_PASSWORD }}@transparencia-agil-postgres.cm3msiuekk1u.us-east-1.rds.amazonaws.com:5432/postgres?schema=public"
-          pnpm --filter donation-core exec prisma migrate deploy
-
       - name: Update ECS service
         run: |
           aws ecs update-service --cluster transparencia-agil-cluster --service api-gateway-service --force-new-deployment || true

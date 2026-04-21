@@ -16,12 +16,10 @@ import { CorrelationIdMiddleware } from './infrastructure/correlation-id.middlew
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: [
-        path.resolve(__dirname, '../../../.env'),
-        path.resolve(__dirname, '../../../.env.local'),
-      ],
       validationSchema: Joi.object({
         DONATION_CORE_URL: Joi.string().required(),
+        DONATION_SUCCESS_URL: Joi.string().uri().required(),
+        DONATION_CANCEL_URL: Joi.string().uri().required(),
         PORT: Joi.number().default(3000),
       }),
       validationOptions: {
