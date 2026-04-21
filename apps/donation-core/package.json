@@ -20,6 +20,9 @@
     "test:integration": "jest --runInBand --testRegex 'src/.*\\.integration-spec\\.ts$'",
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
+  "prisma": {
+    "seed": "pnpm ts-node prisma/seed.ts"
+  },
   "dependencies": {
     "@nestjs/bullmq": "^11.0.4",
     "@nestjs/common": "^11.0.1",
@@ -31,11 +34,11 @@
     "bullmq": "^5.74.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
-    "dotenv": "^16.4.5",
     "joi": "^18.1.2",
     "nestjs-cls": "^6.2.0",
     "nestjs-pino": "^4.6.1",
     "newrelic": "^13.19.1",
+    "prisma": "^6.4.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "stripe": "16.12.0"
@@ -50,6 +53,7 @@
     "@types/jest": "^30.0.0",
     "@types/node": "^24.0.0",
     "@types/supertest": "^7.0.0",
+    "dotenv": "^16.4.5",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",

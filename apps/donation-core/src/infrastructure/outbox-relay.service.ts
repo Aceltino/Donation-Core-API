@@ -34,7 +34,7 @@ export class OutboxRelayService implements OnModuleInit, OnModuleDestroy {
     await this.queue.close();
   }
 
-  @Interval(5000)
+  @Interval(30000)
   async relayPendingEvents() {
     if (this.isRunning) {
       return;

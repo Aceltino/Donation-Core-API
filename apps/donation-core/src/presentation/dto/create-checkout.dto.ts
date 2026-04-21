@@ -11,9 +11,9 @@ export class CreateCheckoutDto {
   @IsString()
   donorId: string;
 
-  @IsUrl()
+  @IsUrl({ require_tld: false })
   successUrl: string;
 
-  @IsUrl()
+  @IsUrl({ require_tld: false })
   cancelUrl: string;
 }
