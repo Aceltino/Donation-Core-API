@@ -127,12 +127,12 @@ jobs:
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
-          docker build -f Dockerfile.api-gateway -t $REGISTRY/transparencia-agil-api-gateway:latest .
-          docker build -f Dockerfile.donation-core -t $REGISTRY/transparencia-agil-donation-core:latest .
-          docker build -f Dockerfile.worker-hub -t $REGISTRY/transparencia-agil-worker-hub:latest .
-          docker push $REGISTRY/transparencia-agil-api-gateway:latest
-          docker push $REGISTRY/transparencia-agil-donation-core:latest
-          docker push $REGISTRY/transparencia-agil-worker-hub:latest
+          docker build -f Dockerfile.api-gateway -t $REGISTRY/api-gateway:latest .
+          docker build -f Dockerfile.donation-core -t $REGISTRY/donation-core:latest .
+          docker build -f Dockerfile.worker-hub -t $REGISTRY/worker-hub:latest .
+          docker push $REGISTRY/api-gateway:latest
+          docker push $REGISTRY/donation-core:latest
+          docker push $REGISTRY/worker-hub:latest
 
       - name: Update ECS service
         run: |
