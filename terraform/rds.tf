@@ -30,7 +30,7 @@ resource "aws_security_group" "rds" {
 resource "aws_db_instance" "postgres" {
   identifier             = "transparencia-agil-postgres"
   engine                 = "postgres"
-  engine_version         = "15.4"
+  engine_version         = "15" 
   instance_class         = "db.t3.micro"
   allocated_storage      = 20
   db_name                = "donationdb"

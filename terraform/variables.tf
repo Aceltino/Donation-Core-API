@@ -57,3 +57,27 @@ variable "lambda_bucket_name" {
   type        = string
   default     = "transparencia-agil-lambda-bucket"
 }
+
+variable "stripe_secret_key" {
+  description = "Chave secreta da Stripe"
+  type        = string
+  sensitive   = true
+}
+
+variable "stripe_webhook_secret" {
+  description = "Chave secreta do Webhook da Stripe"
+  type        = string
+  sensitive   = true
+}
+
+variable "new_relic_license_key" {
+  description = "Chave de licença do New Relic"
+  type        = string
+  sensitive   = true
+}
+
+variable "new_relic_app_name" {
+  description = "Nome base do app no New Relic"
+  type        = string
+  default     = "transparencia-agil-prod"
+}
