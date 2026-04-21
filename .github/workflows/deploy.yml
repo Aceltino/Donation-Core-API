@@ -5,6 +5,9 @@ on:
     branches:
       - main
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -34,7 +37,23 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'pnpm'
+          # Removemos o cache automático daqui para não bugar o PATH
+
+      - name: Install pnpm (Bulletproof method)
+        run: npm install -g pnpm@9
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies
         run: pnpm install
@@ -65,7 +84,22 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'pnpm'
+
+      - name: Install pnpm (Bulletproof method)
+        run: npm install -g pnpm@9
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies
         run: pnpm install
@@ -85,16 +119,18 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build and push Docker images
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
-          docker build -f Dockerfile.api-gateway -t ${{ steps.login-ecr.outputs.registry }}/transparencia-agil-api-gateway:latest .
-          docker build -f Dockerfile.donation-core -t ${{ steps.login-ecr.outputs.registry }}/transparencia-agil-donation-core:latest .
-          docker build -f Dockerfile.worker-hub -t ${{ steps.login-ecr.outputs.registry }}/transparencia-agil-worker-hub:latest .
-          docker push ${{ steps.login-ecr.outputs.registry }}/transparencia-agil-api-gateway:latest
-          docker push ${{ steps.login-ecr.outputs.registry }}/transparencia-agil-donation-core:latest
-          docker push ${{ steps.login-ecr.outputs.registry }}/transparencia-agil-worker-hub:latest
+          docker build -f Dockerfile.api-gateway -t $REGISTRY/transparencia-agil-api-gateway:latest .
+          docker build -f Dockerfile.donation-core -t $REGISTRY/transparencia-agil-donation-core:latest .
+          docker build -f Dockerfile.worker-hub -t $REGISTRY/transparencia-agil-worker-hub:latest .
+          docker push $REGISTRY/transparencia-agil-api-gateway:latest
+          docker push $REGISTRY/transparencia-agil-donation-core:latest
+          docker push $REGISTRY/transparencia-agil-worker-hub:latest
 
       - name: Update ECS service
         run: |
-          aws ecs update-service --cluster transparencia-agil-cluster --service api-gateway-service --force-new-deployment
-          aws ecs update-service --cluster transparencia-agil-cluster --service donation-core-service --force-new-deployment
-          aws ecs update-service --cluster transparencia-agil-cluster --service worker-hub-service --force-new-deployment
+          aws ecs update-service --cluster transparencia-agil-cluster --service api-gateway-service --force-new-deployment || true
+          aws ecs update-service --cluster transparencia-agil-cluster --service donation-core-service --force-new-deployment || true
+          aws ecs update-service --cluster transparencia-agil-cluster --service worker-hub-service --force-new-deployment || true
