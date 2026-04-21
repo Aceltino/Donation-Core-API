@@ -16,10 +16,10 @@ resource "aws_internet_gateway" "main" {
 
 # Public Subnets
 resource "aws_subnet" "public" {
-  count             = length(var.public_subnets)
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = var.public_subnets[count.index]
-  availability_zone = var.availability_zones[count.index]
+  count                   = length(var.public_subnets)
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = var.public_subnets[count.index]
+  availability_zone       = var.availability_zones[count.index]
   map_public_ip_on_launch = true
   tags = {
     Name = "transparencia-agil-public-${count.index + 1}"
@@ -39,8 +39,8 @@ resource "aws_subnet" "private" {
 
 # NAT Gateway (for private subnets to access internet)
 resource "aws_eip" "nat" {
-  count = length(var.public_subnets)
-  vpc   = true
+  count  = length(var.public_subnets)
+  domain = "vpc" # Corrigido: substitui o obsoleto 'vpc = true'
 }
 
 resource "aws_nat_gateway" "main" {

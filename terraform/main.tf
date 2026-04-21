@@ -33,7 +33,8 @@ output "redis_endpoint" {
 }
 
 output "ecr_repositories" {
-  value = aws_ecr_repository.repos[*].repository_url
+  # Corrigido para suportar recursos criados com for_each ou map
+  value = [for repo in aws_ecr_repository.repos : repo.repository_url]
 }
 
 output "ecs_cluster_name" {
