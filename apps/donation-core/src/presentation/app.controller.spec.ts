@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { AppService } from '../application/app.service';
 
 describe('AppController', () => {
   let appController: AppController;
@@ -15,11 +15,8 @@ describe('AppController', () => {
   });
 
   describe('root', () => {
-    it('should return an object with status ok', () => {
-      const result = appController.getHello();
-      expect(result).toHaveProperty('status', 'ok');
-      expect(result).toHaveProperty('service', 'api-gateway');
-      expect(result).toHaveProperty('timestamp');
+    it('should return "Hello World!"', () => {
+      expect(appController.getHello()).toBe('Hello World!');
     });
   });
 

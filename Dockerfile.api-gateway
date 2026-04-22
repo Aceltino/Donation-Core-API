@@ -34,6 +34,6 @@ RUN pnpm install --prod --frozen-lockfile
 COPY --from=builder /app/apps/api-gateway/dist ./apps/api-gateway/dist
 COPY --from=builder /app/newrelic.js ./newrelic.js
 
-EXPOSE 3001
+EXPOSE 3000
 
 CMD ["node", "apps/api-gateway/dist/main"]

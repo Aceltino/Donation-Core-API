@@ -31,5 +31,5 @@ RUN pnpm install --prod --frozen-lockfile
 COPY --from=builder /app/apps/worker-hub/dist ./apps/worker-hub/dist
 COPY --from=builder /app/newrelic.js ./
 
-EXPOSE 3002
+EXPOSE 3000
 CMD ["node", "apps/worker-hub/dist/main"]
