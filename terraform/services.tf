@@ -22,7 +22,7 @@ resource "aws_ecs_task_definition" "api_gateway" {
         { name = "DATABASE_URL", value = "postgresql://${var.db_username}:${var.db_password}@${aws_db_instance.postgres.endpoint}/donationdb?schema=public" },        
         { name = "REDIS_URL", value = "redis://${aws_elasticache_cluster.redis.cache_nodes[0].address}:6379" },
         { name = "STRIPE_SECRET_KEY", value = var.stripe_secret_key },
-        { name = "DONATION_CORE_URL", value = "http://${aws_lb.main.dns_name}" },
+        { name = "DONATION_CORE_URL", value = "http://${aws_lb.internal.dns_name}" },
         { name = "DONATION_SUCCESS_URL", value = "http://${aws_lb.main.dns_name}/success" },
         { name = "DONATION_CANCEL_URL", value = "http://${aws_lb.main.dns_name}/cancel" },
         { name = "NEW_RELIC_LICENSE_KEY", value = var.new_relic_license_key },
@@ -107,9 +107,16 @@ resource "aws_ecs_service" "api_gateway_svc" {
   desired_count   = 1
   launch_type     = "FARGATE"
 
+  load_balancer {
+    target_group_arn = aws_lb_target_group.main.arn
+    container_name   = "api-gateway-service"
+    container_port   = 3000
+  }
+
   network_configuration {
     subnets          = aws_subnet.public[*].id
     assign_public_ip = true
+    security_groups  = [aws_security_group.ecs_tasks.id]
   }
 }
 
@@ -120,9 +127,16 @@ resource "aws_ecs_service" "donation_core_svc" {
   desired_count   = 1
   launch_type     = "FARGATE"
 
+  load_balancer {
+    target_group_arn = aws_lb_target_group.internal.arn
+    container_name   = "donation-core-service"
+    container_port   = 3000
+  }
+
   network_configuration {
-    subnets          = aws_subnet.public[*].id
-    assign_public_ip = true
+    subnets          = aws_subnet.private[*].id
+    assign_public_ip = false
+    security_groups  = [aws_security_group.ecs_tasks.id]
   }
 }
 
@@ -133,9 +147,9 @@ resource "aws_ecs_service" "worker_hub_svc" {
   desired_count   = 1
   launch_type     = "FARGATE"
 
-network_configuration {
-  subnets          = aws_subnet.public[*].id
-  assign_public_ip = true
-  security_groups  = [aws_security_group.ecs_tasks.id] # Garanta que esta linha esteja assim
-}
+  network_configuration {
+    subnets          = aws_subnet.private[*].id
+    assign_public_ip = false
+    security_groups  = [aws_security_group.ecs_tasks.id]
+  }
 }

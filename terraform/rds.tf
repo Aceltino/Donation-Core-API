@@ -1,7 +1,7 @@
-resource "aws_db_subnet_group" "main_public" {
-  name       = "main-public-group"
-  subnet_ids = aws_subnet.public[*].id
-  tags       = { Name = "Public DB Subnet Group" }
+resource "aws_db_subnet_group" "main_private" {
+  name       = "main-private-group"
+  subnet_ids = aws_subnet.private[*].id
+  tags       = { Name = "Private DB Subnet Group" }
 }
 
 resource "aws_security_group" "rds" {
@@ -13,13 +13,6 @@ resource "aws_security_group" "rds" {
     to_port         = 5432
     protocol        = "tcp"
     security_groups = [aws_security_group.ecs_tasks.id] # Containers acessam o banco
-  }
-
-  ingress {
-    from_port   = 5432
-    to_port     = 5432
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Acesso externo para migrations
   }
 
   egress {
@@ -34,15 +27,15 @@ resource "aws_db_instance" "postgres" {
   identifier             = "transparencia-agil-postgres"
   engine                 = "postgres"
   engine_version         = "15"
-  instance_class         = "db.t3.micro"
+  instance_class         = "db.t4g.micro"
   allocated_storage      = 20
   db_name                = "donationdb"
   username               = var.db_username
   password               = var.db_password
-  db_subnet_group_name   = aws_db_subnet_group.main_public.name
+  db_subnet_group_name   = aws_db_subnet_group.main_private.name
   vpc_security_group_ids = [aws_security_group.rds.id]
   skip_final_snapshot    = true
-  publicly_accessible    = true
+  publicly_accessible    = false
 }
 
 # Redis
