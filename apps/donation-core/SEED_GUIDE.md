@@ -51,6 +51,27 @@ NODE_ENV=development
 pnpm exec prisma migrate dev
 ```
 
+### 4. Usando Docker (Recomendado para desenvolvimento)
+
+Para facilitar o desenvolvimento, use Docker Compose. O seed será executado automaticamente se `RUN_SEED=true` no `.env`.
+
+```bash
+# Na raiz do projeto
+docker-compose up --build
+```
+
+Isso irá:
+- Construir e iniciar PostgreSQL e Redis
+- Executar migrações do banco
+- Executar o seed automaticamente (se RUN_SEED=true)
+- Iniciar a aplicação
+
+Para executar o seed manualmente em um container em execução:
+
+```bash
+docker-compose exec donation-core sh -c "cd apps/donation-core && pnpm exec prisma db seed"
+```
+
 ---
 
 ## Running the Seed

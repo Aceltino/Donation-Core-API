@@ -3,13 +3,18 @@ services:
     image: postgres:15
     container_name: transparencia-agil-postgres
     environment:
-      POSTGRES_DB: donationdb
+      POSTGRES_DB: transparencia_agil
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
@@ -46,14 +51,16 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     env_file: .env
-    command: node apps/donation-core/dist/src/main.js
     environment:
       - PORTDONATION=3000
       - DATABASE_URL=${DATABASE_URL}
       - REDIS_URL=redis://transparencia-agil-redis:6379
+      - RUN_SEED=${RUN_SEED:-false}
       - NEW_RELIC_APP_NAME=Transparencia-Agil-Core
       - NEW_RELIC_LICENSE_KEY=${NEW_RELIC_LICENSE_KEY}
       - NEW_RELIC_NO_CONFIG_FILE=true

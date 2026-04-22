@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Logger, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Post, Logger, UsePipes, ValidationPipe, BadRequestException } from '@nestjs/common';
 import { CreateCheckoutSessionUseCase } from '../application/create-checkout-session.use-case';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
 
@@ -11,7 +11,18 @@ export class DonationController {
   ) { }
 
   @Post('checkout') // Rota final: /donations/checkout
-  @UsePipes(new ValidationPipe()) // Garante que o New Relic veja dados limpos
+  @UsePipes(new ValidationPipe({ 
+    whitelist: true, 
+    forbidNonWhitelisted: true, 
+    transform: true,
+    exceptionFactory: (errors) => {
+      const messages = errors.map(error => {
+        const constraints = error.constraints;
+        return constraints ? Object.values(constraints).join(', ') : 'Validation error';
+      });
+      return new BadRequestException(`Validation failed: ${messages.join('; ')}`);
+    }
+  }))
   async createCheckout(@Body() dto: CreateCheckoutDto) {
     this.logger.log(`[CORE] Processando Use Case de Checkout`);
 

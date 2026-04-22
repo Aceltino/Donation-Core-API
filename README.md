@@ -103,12 +103,17 @@ graph TD
    - PostgreSQL on port 5432
    - Redis on port 6379
    - API Gateway on port 3001
-   - Donation Core on port 3000
+   - Donation Core on port 3000 (with automatic migrations and seed if RUN_SEED=true)
    - Worker Hub on port 3002
 
-5. **Run database migrations**
+5. **(Optional) Run database migrations manually**
    ```bash
    pnpm --filter donation-core prisma migrate dev
+   ```
+
+6. **(Optional) Seed the database manually**
+   ```bash
+   pnpm --filter donation-core prisma db seed
    ```
 
 ## 🧪 Testing

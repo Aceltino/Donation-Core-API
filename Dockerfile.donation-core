@@ -14,6 +14,7 @@ COPY . .
 # Gera o Prisma Client e Build
 RUN cd apps/donation-core && pnpm exec prisma generate
 RUN cd apps/donation-core && pnpm exec nest build
+RUN ls -la /app/apps/donation-core/dist/
 
 # PRODUCTION STAGE
 FROM node:20-alpine AS production
@@ -26,15 +27,20 @@ ENV NEW_RELIC_NO_CONFIG_FILE=true
 RUN npm install -g pnpm
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/donation-core/package.json ./apps/donation-core/
-RUN pnpm install --prod --frozen-lockfile
+RUN pnpm install --frozen-lockfile
 COPY --from=builder /app/node_modules ./node_modules
 
 # Copia o schema Prisma para migrações em runtime
 COPY --from=builder /app/apps/donation-core/prisma ./apps/donation-core/prisma
 
 # Copia o build
-COPY --from=builder /app/apps/donation-core/dist ./apps/donation-core/dist
+RUN echo "Copying dist"
+COPY --from=builder /app/apps/donation-core/dist/ ./apps/donation-core/dist/
+RUN ls -la /app/apps/donation-core/dist/
 COPY --from=builder /app/newrelic.js ./
+COPY --from=builder /app/apps/donation-core/entrypoint.sh ./apps/donation-core/entrypoint.sh
+
+RUN chmod +x ./apps/donation-core/entrypoint.sh
 
 EXPOSE 3000
-CMD ["node", "apps/donation-core/dist/main"]
+ENTRYPOINT ["./apps/donation-core/entrypoint.sh"]
