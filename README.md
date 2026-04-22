@@ -152,30 +152,32 @@ Once running locally, access Swagger documentation at:
 
 ## 🚀 Deployment
 
-### Automatic Deployment
-Push to the `main` branch triggers CI/CD pipeline that:
-1. Runs all tests
-2. Builds Docker images
-3. Pushes to AWS ECR
-4. Deploys to ECS
+### Automatic CI/CD Pipeline
+Push to the `main` branch triggers the CI/CD pipeline that:
+1. Runs all tests (~5-10 min)
+2. Validates Terraform infrastructure (plan only)
+3. Completes in ~10 minutes total
 
-### Manual Deployment
+### Manual Infrastructure Deployment
+For infrastructure changes, run the "Deploy Infrastructure" workflow manually:
+1. Go to GitHub Actions → "Deploy Infrastructure"
+2. Click "Run workflow"
+3. This applies Terraform changes (~5-10 min)
 
-1. **Infrastructure Setup**
-   ```bash
-   cd terraform
-   terraform init
-   terraform plan
-   terraform apply
-   ```
+### Application Deployment
+After infrastructure is ready:
+1. The same workflow builds and deploys the application
+2. Pushes Docker images to ECR
+3. Updates ECS services (~10-15 min)
 
-2. **Environment Variables**
-   Configure the following in your deployment environment:
-   - `DATABASE_URL`
-   - `REDIS_URL`
-   - `STRIPE_SECRET_KEY`
-   - `STRIPE_WEBHOOK_SECRET`
-   - And other service-specific variables
+### Environment Variables
+Configure the following secrets in GitHub:
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `DB_PASSWORD`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `NEW_RELIC_LICENSE_KEY`
 
 ## 🤝 Contributing
 

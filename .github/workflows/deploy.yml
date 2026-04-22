@@ -127,32 +127,8 @@ jobs:
 
       - name: Terraform Plan
         run: cd terraform && terraform plan
-
-      - name: Terraform Apply
-        run: cd terraform && terraform apply -auto-approve
         env:
           TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
           TF_VAR_stripe_secret_key: ${{ secrets.STRIPE_SECRET_KEY }}
           TF_VAR_stripe_webhook_secret: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
           TF_VAR_new_relic_license_key: ${{ secrets.NEW_RELIC_LICENSE_KEY }}
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Build and push Docker images
-        env:
-          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        run: |
-          docker build -f Dockerfile.api-gateway -t $REGISTRY/api-gateway:latest .
-          docker build -f Dockerfile.donation-core -t $REGISTRY/donation-core:latest .
-          docker build -f Dockerfile.worker-hub -t $REGISTRY/worker-hub:latest .
-          docker push $REGISTRY/api-gateway:latest
-          docker push $REGISTRY/donation-core:latest
-          docker push $REGISTRY/worker-hub:latest
-
-      - name: Update ECS service
-        run: |
-          aws ecs update-service --cluster transparencia-agil-cluster --service api-gateway-service --force-new-deployment || true
-          aws ecs update-service --cluster transparencia-agil-cluster --service donation-core-service --force-new-deployment || true
-          aws ecs update-service --cluster transparencia-agil-cluster --service worker-hub-service --force-new-deployment || true
