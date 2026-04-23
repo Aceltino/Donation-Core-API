@@ -1,4 +1,4 @@
-import { Controller, Post, Body, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import { Controller, Post, Get, Body, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { ClsService } from 'nestjs-cls';
@@ -115,6 +115,23 @@ export class DonationBffController {
       const status = error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR;
       const message = error.response?.data?.message || 'Erro na comunicação com o serviço de doações';
       throw new HttpException(message, status);
+    }
+  }
+
+  @Get('setup-test-data')
+  @ApiOperation({ summary: 'Gera dados de teste no Core' })
+  async setupTestData() {
+    const donationCoreUrl = this.configService.get<string>('DONATION_CORE_URL');
+
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get(`${donationCoreUrl}/donations/setup-test-data`)
+      );
+      return response.data;
+    } catch (error: any) {
+      this.logger.error(`[BFF] Falha ao chamar Setup no Core: ${error.message}`);
+      const status = error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR;
+      throw new HttpException('Erro ao acessar o Core para setup', status);
     }
   }
 }

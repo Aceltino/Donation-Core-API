@@ -6,6 +6,9 @@ import { AllExceptionsFilter } from './presentation/all-exceptions.filter';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { rawBody: true });
   app.useGlobalFilters(new AllExceptionsFilter());
-  await app.listen(process.env.PORTDONATION ?? 3000);
+  const port = process.env.PORTDONATION || 3000;
+  await app.listen(port, '0.0.0.0');
+
+  console.log(`Application is running on: http://0.0.0.0:${port}`);
 }
 void bootstrap();

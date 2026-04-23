@@ -72,17 +72,19 @@ resource "aws_route_table_association" "private" {
   route_table_id = aws_route_table.private[count.index].id
 }
 
-# --- SECURITY GROUPS ---
+# --- SECURITY GROUPS (Sem regras de Ingress que causam ciclo) ---
 
 resource "aws_security_group" "alb" {
   name   = "transparencia-agil-alb-sg"
   vpc_id = aws_vpc.main.id
+  
   ingress {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+  
   egress {
     from_port   = 0
     to_port     = 0
@@ -95,12 +97,7 @@ resource "aws_security_group" "ecs_tasks" {
   name        = "transparencia-agil-ecs-tasks-sg"
   description = "Permite entrada vinda do ALB na porta 3000"
   vpc_id      = aws_vpc.main.id
-  ingress {
-    protocol        = "tcp"
-    from_port       = 3000
-    to_port         = 3000
-    security_groups = [aws_security_group.alb.id]
-  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -109,7 +106,51 @@ resource "aws_security_group" "ecs_tasks" {
   }
 }
 
-# --- LOAD BALANCER COMPONENTS ---
+resource "aws_security_group" "alb_internal" {
+  name   = "transparencia-agil-internal-alb-sg"
+  vpc_id = aws_vpc.main.id
+  
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+# --- REGRAS DE SECURITY GROUP (Quebram o ciclo) ---
+
+# Regra: ALB Público -> ECS Tasks (Permite que o Gateway receba tráfego da internet)
+resource "aws_security_group_rule" "ecs_ingress_alb_public" {
+  type                     = "ingress"
+  from_port                = 3000
+  to_port                  = 3000
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.ecs_tasks.id
+  source_security_group_id = aws_security_group.alb.id
+}
+
+# Regra: ALB Interno -> ECS Tasks (Permite Health Check do ALB Interno no Donation Core)
+resource "aws_security_group_rule" "ecs_ingress_alb_internal" {
+  type                     = "ingress"
+  from_port                = 3000
+  to_port                  = 3000
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.ecs_tasks.id
+  source_security_group_id = aws_security_group.alb_internal.id
+}
+
+# Regra: ECS Tasks -> ALB Interno (Permite que o Gateway chame o Donation Core via ALB Interno)
+resource "aws_security_group_rule" "alb_internal_ingress_ecs" {
+  type                     = "ingress"
+  from_port                = 80
+  to_port                  = 80
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.alb_internal.id
+  source_security_group_id = aws_security_group.ecs_tasks.id
+}
+
+# --- LOAD BALANCER COMPONENTS (Público) ---
 
 resource "aws_lb_target_group" "main" {
   name        = "transparencia-agil-tg"
@@ -145,7 +186,9 @@ resource "aws_wafv2_web_acl_association" "main" {
   resource_arn = aws_lb.main.arn
   web_acl_arn  = aws_wafv2_web_acl.main.arn
 }
-# Internal ALB for donation-core
+
+# --- LOAD BALANCER COMPONENTS (Interno) ---
+
 resource "aws_lb" "internal" {
   name               = "transparencia-agil-internal-alb"
   internal           = true
@@ -157,23 +200,6 @@ resource "aws_lb" "internal" {
 
   tags = {
     Name = "transparencia-agil-internal-alb"
-  }
-}
-
-resource "aws_security_group" "alb_internal" {
-  name   = "transparencia-agil-internal-alb-sg"
-  vpc_id = aws_vpc.main.id
-  ingress {
-    from_port       = 80
-    to_port         = 80
-    protocol        = "tcp"
-    security_groups = [aws_security_group.ecs_tasks.id]
-  }
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
   }
 }
 
