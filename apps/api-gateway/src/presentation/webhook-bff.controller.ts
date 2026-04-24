@@ -15,27 +15,23 @@ export class WebhookBffController {
         private readonly httpService: HttpService,
         private readonly configService: ConfigService,
     ) { }
-
     @Post('stripe')
     async forwardStripeWebhook(@Req() req: RawBodyRequest<Request>, @Res() res: Response) {
-        this.logger.log('[BFF] Recebendo Webhook do Stripe e repassando ao Core...');
+        this.logger.log('[BFF] Repassando RawBody do Stripe para o Core...');
         const donationCoreUrl = this.configService.get<string>('DONATION_CORE_URL');
 
         try {
-            const stripeSignature = req.headers['stripe-signature'];
+            // 1. Pegamos o corpo bruto (Buffer)
+            const rawPayload = req.rawBody;
 
-            // Agora o TypeScript sabe perfeitamente o que é o rawBody!
-            const rawPayload = req.rawBody
-                ? req.rawBody.toString('utf8')
-                : req.body;
             const response = await firstValueFrom(
                 this.httpService.post(
                     `${donationCoreUrl}/webhooks/stripe`,
-                    rawPayload,
+                    rawPayload, // Enviamos o BUFFER, não o objeto JSON
                     {
                         headers: {
-                            'stripe-signature': stripeSignature,
-                            'content-type': 'application/json',
+                            'stripe-signature': req.headers['stripe-signature'],
+                            'content-type': 'application/json', // Mantemos o type, mas o conteúdo é o buffer
                         },
                     }
                 )
@@ -43,9 +39,9 @@ export class WebhookBffController {
 
             return res.status(response.status).send(response.data);
         } catch (error: any) {
-            this.logger.error(`[BFF] Erro ao repassar Webhook para o Core: ${error.message}`);
+            this.logger.error(`[BFF] Erro no repasse: ${error.message}`);
             const status = error.response?.status || 500;
-            return res.status(status).send(error.response?.data || 'Erro interno no BFF ao processar webhook');
+            return res.status(status).send(error.response?.data);
         }
     }
 }
