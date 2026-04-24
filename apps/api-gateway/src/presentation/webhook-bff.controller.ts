@@ -25,8 +25,9 @@ export class WebhookBffController {
             const stripeSignature = req.headers['stripe-signature'];
 
             // Agora o TypeScript sabe perfeitamente o que é o rawBody!
-            const rawPayload = req.rawBody || req.body;
-
+            const rawPayload = req.rawBody
+                ? req.rawBody.toString('utf8')
+                : req.body;
             const response = await firstValueFrom(
                 this.httpService.post(
                     `${donationCoreUrl}/webhooks/stripe`,
