@@ -3,12 +3,13 @@ import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 import { ClsModule } from 'nestjs-cls';
-import * as path from 'path';
 import * as Joi from 'joi';
 import { randomUUID } from 'crypto';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DonationBffController } from './presentation/donation-bff.controller';
+// 👇 1. Importe o novo controller aqui
+import { WebhookBffController } from './presentation/webhook-bff.controller';
 import { HttpModule } from '@nestjs/axios';
 import { CorrelationIdMiddleware } from './infrastructure/correlation-id.middleware';
 
@@ -38,11 +39,11 @@ import { CorrelationIdMiddleware } from './infrastructure/correlation-id.middlew
           process.env.NODE_ENV === 'production'
             ? undefined
             : {
-                target: 'pino-pretty',
-                options: {
-                  colorize: true,
-                },
+              target: 'pino-pretty',
+              options: {
+                colorize: true,
               },
+            },
         customProps: (req) => ({
           correlationId: req.headers['x-correlation-id'],
         }),
@@ -58,7 +59,8 @@ import { CorrelationIdMiddleware } from './infrastructure/correlation-id.middlew
     }),
     HttpModule,
   ],
-  controllers: [AppController, DonationBffController],
+  // 👇 2. Adicione o WebhookBffController no array de controllers
+  controllers: [AppController, DonationBffController, WebhookBffController],
   providers: [AppService],
 })
 export class AppModule {
