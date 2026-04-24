@@ -1,7 +1,7 @@
 import { Controller, Post, Req, Res, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
-import type { Request, Response } from 'express'; // <-- AQUI FOI CORRIGIDO
+import type { Request, Response } from 'express';
 import { firstValueFrom } from 'rxjs';
 import { ApiExcludeController } from '@nestjs/swagger';
 
@@ -23,13 +23,18 @@ export class WebhookBffController {
         try {
             const stripeSignature = req.headers['stripe-signature'];
 
+            // 👇 MUDE AQUI: Use req.rawBody para manter a formatação original do Stripe
+            const rawPayload = req.rawBody || req.body;
+
             const response = await firstValueFrom(
                 this.httpService.post(
                     `${donationCoreUrl}/webhooks/stripe`,
-                    req.body,
+                    rawPayload, // Repassa o payload intocado
                     {
                         headers: {
                             'stripe-signature': stripeSignature,
+                            // Opcional, mas garante que o Core saiba o que está recebendo:
+                            'content-type': 'application/json',
                         },
                     }
                 )
