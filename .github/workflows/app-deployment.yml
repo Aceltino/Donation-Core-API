@@ -27,7 +27,7 @@ jobs:
         run: |
           pnpm install
           pnpm --filter donation-core exec prisma generate
-          # pnpm test
+          pnpm test
         env:
           DATABASE_URL: postgresql://postgres:password@localhost:5432/transparencia_agil?schema=public
 

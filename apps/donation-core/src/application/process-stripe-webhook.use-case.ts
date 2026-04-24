@@ -1,3 +1,7 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { PrismaClient, DonationStatus } from '@prisma/client';
+import Stripe from 'stripe';
+
 @Injectable()
 export class ProcessStripeWebhookUseCase {
   private readonly logger = new Logger(ProcessStripeWebhookUseCase.name);
@@ -7,7 +11,7 @@ export class ProcessStripeWebhookUseCase {
   async execute(event: Stripe.Event, correlationId?: string): Promise<void> {
     try {
       await this.prisma.$transaction(async (tx) => {
-        // Idempotência: Evita processar o mesmo evento duas vezes
+        // Registro para evitar processamento duplicado (Idempotência)
         await tx.processedWebhook.create({
           data: {
             id: event.id,
@@ -42,8 +46,8 @@ export class ProcessStripeWebhookUseCase {
           } else {
             this.logger.warn(`[WEBHOOK] Sessão ${session.id} não encontrada no banco.`);
           }
-        }
-
+        } 
+        
         else if (event.type === 'invoice.payment_failed') {
           const invoice = event.data.object as Stripe.Invoice;
           const subscriptionId = invoice.subscription as string;
@@ -72,12 +76,11 @@ export class ProcessStripeWebhookUseCase {
         }
       });
     } catch (error: any) {
-      // P2002 é o código do Prisma para "Unique constraint failed" (já processamos esse evento)
       if (error.code === 'P2002') {
-        this.logger.log(`[WEBHOOK] Evento ${event.id} já foi processado anteriormente.`);
+        this.logger.log(`[WEBHOOK] Evento ${event.id} já foi processado.`);
         return;
       }
-      this.logger.error(`[WEBHOOK] Erro ao processar transação: ${error.message}`);
+      this.logger.error(`[WEBHOOK] Erro no processamento: ${error.message}`);
       throw error;
     }
   }
