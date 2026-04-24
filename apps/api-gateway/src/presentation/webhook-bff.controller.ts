@@ -15,24 +15,24 @@ export class WebhookBffController {
         private readonly httpService: HttpService,
         private readonly configService: ConfigService,
     ) { }
+
     @Post('stripe')
     async forwardStripeWebhook(@Req() req: RawBodyRequest<Request>, @Res() res: Response) {
-        this.logger.log('[BFF] Repassando RawBody do Stripe para o Core...');
+        this.logger.log(`[BFF] Repassando Webhook. Tamanho do Buffer: ${req.rawBody?.length} bytes`);
         const donationCoreUrl = this.configService.get<string>('DONATION_CORE_URL');
 
         try {
-            // 1. Pegamos o corpo bruto (Buffer)
-            const rawPayload = req.rawBody;
-
             const response = await firstValueFrom(
                 this.httpService.post(
                     `${donationCoreUrl}/webhooks/stripe`,
-                    rawPayload, // Enviamos o BUFFER, não o objeto JSON
+                    req.rawBody, // Enviamos o Buffer bruto
                     {
                         headers: {
                             'stripe-signature': req.headers['stripe-signature'],
-                            'content-type': 'application/json', // Mantemos o type, mas o conteúdo é o buffer
+                            'content-type': 'application/json',
                         },
+                        // ESSENCIAL: Impede o Axios de transformar o Buffer em string/objeto
+                        transformRequest: [(data) => data],
                     }
                 )
             );

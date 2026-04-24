@@ -31,6 +31,7 @@ export class StripeWebhookController {
     @Headers('stripe-signature') signature: string,
     @Req() req: RawBodyRequest<Request>,
   ) {
+    this.logger.log(`[CORE] Recebido payload de ${req.rawBody?.length} bytes`);
     if (!signature) {
       throw new BadRequestException('Missing Stripe signature');
     }
