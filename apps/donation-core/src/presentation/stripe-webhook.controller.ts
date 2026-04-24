@@ -28,19 +28,14 @@ export class StripeWebhookController {
 
   @Post('stripe')
   async handleWebhook(
-
     @Headers('stripe-signature') signature: string,
     @Req() req: RawBodyRequest<Request>,
   ) {
-    const webhookSecret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET');
-
-    // Log de segurança (mostra só o começo e o fim do segredo)
-    const secretPreview = `${webhookSecret?.slice(0, 8)}...${webhookSecret?.slice(-4)}`;
-    this.logger.log(`[CORE] Tentando validar com segredo: ${secretPreview}`);
     if (!signature) {
       throw new BadRequestException('Missing Stripe signature');
     }
 
+    // Deixe apenas ESTA declaração
     const webhookSecret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET');
 
     if (!webhookSecret) {
@@ -59,7 +54,7 @@ export class StripeWebhookController {
       const event = this.stripeService.constructWebhookEvent(
         rawBody,
         signature,
-        webhookSecret,
+        webhookSecret, // Usa a variável aqui
       );
 
       this.logger.log(`[STRIPE WEBHOOK] Evento verificado: ${event.type}`);
