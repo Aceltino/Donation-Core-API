@@ -32,7 +32,7 @@ export class DonationController {
   // --- ROTA DE SETUP PARA TESTES NA AWS ---
   @Get('setup-test-data') // Rota final: /donations/setup-test-data
   async setupTestData() {
-    this.logger.log(`[CORE] Gerando dados de teste no banco de dados...`);
+    this.logger.log(`[CORE] Gerando dados de teste no banco de dados..`);
     const prisma = new PrismaClient();
 
     try {
