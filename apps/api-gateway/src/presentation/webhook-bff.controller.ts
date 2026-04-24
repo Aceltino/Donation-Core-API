@@ -25,13 +25,13 @@ export class WebhookBffController {
             const response = await firstValueFrom(
                 this.httpService.post(
                     `${donationCoreUrl}/webhooks/stripe`,
-                    req.rawBody, // Enviamos o Buffer bruto
+                    req.rawBody, // O Buffer puro
                     {
                         headers: {
                             'stripe-signature': req.headers['stripe-signature'],
                             'content-type': 'application/json',
                         },
-                        // ESSENCIAL: Impede o Axios de transformar o Buffer em string/objeto
+                        // GARANTA ISSO: Impede o Axios de serializar o Buffer
                         transformRequest: [(data) => data],
                     }
                 )

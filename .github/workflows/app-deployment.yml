@@ -18,8 +18,10 @@ jobs:
           --health-retries 5
     steps:
       - uses: actions/checkout@v4
+      
       - uses: pnpm/action-setup@v3
         with: { version: 9 }
+      
       - uses: actions/setup-node@v4
         with: { node-version: 20, cache: 'pnpm' }
       
@@ -52,19 +54,26 @@ jobs:
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
-          # Build em paralelo (opcional, mas aqui vamos na sequência para clareza)
+          # Build das imagens usando Dockerfiles específicos
           docker build -f Dockerfile.api-gateway -t $REGISTRY/api-gateway:latest .
           docker build -f Dockerfile.donation-core -t $REGISTRY/donation-core:latest .
           docker build -f Dockerfile.worker-hub -t $REGISTRY/worker-hub:latest .
           
+          # Push para o ECR
           docker push $REGISTRY/api-gateway:latest
           docker push $REGISTRY/donation-core:latest
           docker push $REGISTRY/worker-hub:latest
 
-      - name: Deploy to Amazon ECS
+      - name: Deploy to Amazon ECS (Force New Deployment)
         run: |
-          # Força o ECS a baixar a imagem 'latest' que acabamos de subir
+          # Lista de serviços para atualizar
           services=("api-gateway-service" "donation-core-service" "worker-hub-service")
+          
           for service in "${services[@]}"; do
-            aws ecs update-service --cluster transparencia-agil-cluster --service $service --force-new-deployment --region us-east-1
+            echo "🚀 Atualizando serviço: $service..."
+            aws ecs update-service \
+              --cluster transparencia-agil-cluster \
+              --service $service \
+              --force-new-deployment \
+              --region us-east-1
           done

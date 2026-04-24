@@ -28,10 +28,15 @@ export class StripeWebhookController {
 
   @Post('stripe')
   async handleWebhook(
+
     @Headers('stripe-signature') signature: string,
     @Req() req: RawBodyRequest<Request>,
   ) {
-    this.logger.log(`[CORE] Recebido payload de ${req.rawBody?.length} bytes`);
+    const webhookSecret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET');
+
+    // Log de segurança (mostra só o começo e o fim do segredo)
+    const secretPreview = `${webhookSecret?.slice(0, 8)}...${webhookSecret?.slice(-4)}`;
+    this.logger.log(`[CORE] Tentando validar com segredo: ${secretPreview}`);
     if (!signature) {
       throw new BadRequestException('Missing Stripe signature');
     }
