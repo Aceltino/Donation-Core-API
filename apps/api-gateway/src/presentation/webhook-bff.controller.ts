@@ -1,4 +1,5 @@
-import { Controller, Post, Req, Res, Logger, RawBodyRequest } from '@nestjs/common'; // <-- Adicionado RawBodyRequest aqui
+import { Controller, Post, Req, Res, Logger } from '@nestjs/common';
+import type { RawBodyRequest } from '@nestjs/common'; // <-- Separamos aqui como tipo!
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
@@ -16,7 +17,6 @@ export class WebhookBffController {
     ) { }
 
     @Post('stripe')
-    // 👇 Usando o RawBodyRequest<Request> para avisar o TypeScript que o rawBody existe
     async forwardStripeWebhook(@Req() req: RawBodyRequest<Request>, @Res() res: Response) {
         this.logger.log('[BFF] Recebendo Webhook do Stripe e repassando ao Core...');
         const donationCoreUrl = this.configService.get<string>('DONATION_CORE_URL');
@@ -24,7 +24,7 @@ export class WebhookBffController {
         try {
             const stripeSignature = req.headers['stripe-signature'];
 
-            // Agora o TypeScript sabe que o rawBody pode estar lá!
+            // Agora o TypeScript sabe perfeitamente o que é o rawBody!
             const rawPayload = req.rawBody || req.body;
 
             const response = await firstValueFrom(
