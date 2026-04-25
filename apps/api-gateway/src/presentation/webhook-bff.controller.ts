@@ -39,7 +39,7 @@ export class WebhookBffController {
     this.logger.log(`[BFF] Payload Fim: ${payloadString.substring(payloadString.length - 50)}`);
 
     try {
-      this.logger.log('[BFF] Iniciando repasse para o Core...');
+      this.logger.log('[BFF] Iniciando repasse para o Core....');
 
       // O segredo de ouro: Passamos o rawBuffer diretamente como "data", 
       // mas pedimos pro Axios tratar como um ArrayBuffer genérico
