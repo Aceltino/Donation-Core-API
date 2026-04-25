@@ -14,7 +14,7 @@ export class WebhookBffController {
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
-  ) {}
+  ) { }
 
   @Post('stripe')
   async forwardStripeWebhook(
@@ -42,9 +42,11 @@ export class WebhookBffController {
           {
             headers: {
               'stripe-signature': stripeSignature,
-              'content-type': 'application/octet-stream',
-              'content-length': rawBody.length,
+              // MUDANÇA AQUI: Repassa o header original que o Stripe mandou
+              'content-type': req.headers['content-type'] || 'application/json',
+              'content-length': rawBody.length.toString(), // Convertido para string por segurança
             },
+            // Manteve o Buffer intacto. Perfeito!
             transformRequest: [(data) => data],
             responseType: 'text',
           },
@@ -56,7 +58,7 @@ export class WebhookBffController {
       this.logger.error(`[BFF] Erro no repasse: ${error.message}`);
       if (error.response) {
         this.logger.error(
-          `[BFF] Resposta do donation-core: ${JSON.stringify(error.response.data)}`,
+          `[BFF] Resposta do donation-core: ${typeof error.response.data === 'object' ? JSON.stringify(error.response.data) : error.response.data}`,
         );
       }
       const status = error.response?.status || 500;
