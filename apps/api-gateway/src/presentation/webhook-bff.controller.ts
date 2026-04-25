@@ -1,5 +1,4 @@
 import { Controller, Post, Req, Res, Logger } from '@nestjs/common';
-import type { RawBodyRequest } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
@@ -14,52 +13,64 @@ export class WebhookBffController {
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
-  ) { }
+  ) {}
 
   @Post('stripe')
   async forwardStripeWebhook(
-    @Req() req: RawBodyRequest<Request>,
+    @Req() req: Request, // Usamos Request normal, pois vamos usar req como Stream
     @Res() res: Response,
   ) {
-    const rawBody = req.rawBody;
-    this.logger.log(
-      `[BFF] Repassando Webhook. Tamanho do Buffer: ${rawBody?.length} bytes`,
-    );
-
-    if (!rawBody) {
-      this.logger.error('[BFF] rawBody vazio — verifique rawBody: true no main.ts');
-      return res.status(400).send({ message: 'Raw body ausente' });
-    }
-
     const donationCoreUrl = this.configService.get<string>('DONATION_CORE_URL');
     const stripeSignature = req.headers['stripe-signature'] as string;
+    
+    // Log para você visualizar se a assinatura está chegando inteira
+    this.logger.log(`[BFF] Assinatura recebida: ${stripeSignature?.substring(0, 30)}...`);
+
+    // Acessa o Buffer injetado pelo rawBody: true no main.ts
+    const rawBuffer = (req as any).rawBody; 
+    
+    if (!rawBuffer) {
+        return res.status(400).send({ message: 'Raw body ausente no BFF' });
+    }
+
+    // Log super útil para debugar: Mostra o começo e fim do payload exato que recebemos
+    const payloadString = rawBuffer.toString('utf8');
+    this.logger.log(`[BFF] Payload Início: ${payloadString.substring(0, 50)}`);
+    this.logger.log(`[BFF] Payload Fim: ${payloadString.substring(payloadString.length - 50)}`);
 
     try {
+      this.logger.log('[BFF] Iniciando repasse para o Core...');
+
+      // O segredo de ouro: Passamos o rawBuffer diretamente como "data", 
+      // mas pedimos pro Axios tratar como um ArrayBuffer genérico
       const response = await firstValueFrom(
         this.httpService.post(
           `${donationCoreUrl}/webhooks/stripe`,
-          rawBody,
+          rawBuffer,
           {
             headers: {
               'stripe-signature': stripeSignature,
-              // MUDANÇA AQUI: Repassa o header original que o Stripe mandou
+              // Mantém o content-type exato que o Stripe mandou
               'content-type': req.headers['content-type'] || 'application/json',
-              'content-length': rawBody.length.toString(), // Convertido para string por segurança
+              'content-length': rawBuffer.length.toString(),
             },
-            // Manteve o Buffer intacto. Perfeito!
+            // Desliga TODAS as transformações do Axios
             transformRequest: [(data) => data],
-            responseType: 'text',
+            responseType: 'arraybuffer', // Garante que a resposta também venha crua
           },
         ),
       );
 
+      this.logger.log(`[BFF] Repasse concluído com status ${response.status}`);
       return res.status(response.status).send(response.data);
     } catch (error: any) {
       this.logger.error(`[BFF] Erro no repasse: ${error.message}`);
       if (error.response) {
-        this.logger.error(
-          `[BFF] Resposta do donation-core: ${typeof error.response.data === 'object' ? JSON.stringify(error.response.data) : error.response.data}`,
-        );
+         // Converte o buffer de erro para string só pra logar bonito
+         const errorStr = error.response.data instanceof Buffer 
+            ? error.response.data.toString() 
+            : JSON.stringify(error.response.data);
+         this.logger.error(`[BFF] Erro detalhado do Core: ${errorStr}`);
       }
       const status = error.response?.status || 500;
       return res.status(status).send(error.response?.data);
