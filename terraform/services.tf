@@ -78,6 +78,9 @@ resource "aws_ecs_task_definition" "worker_hub" {
   memory                   = "512"
   execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
 
+# Role da Tarefa (permissão para o seu worker chamar a Lambda)
+  task_role_arn            = aws_iam_role.ecs_task_role.arn
+  
   container_definitions = jsonencode([
     {
       name      = "worker-hub-service"

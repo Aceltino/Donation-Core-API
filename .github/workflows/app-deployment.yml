@@ -64,16 +64,29 @@ jobs:
           docker push $REGISTRY/donation-core:latest
           docker push $REGISTRY/worker-hub:latest
 
-      - name: Deploy to Amazon ECS (Force New Deployment)
+      - name: Deploy to Amazon ECS (Force New Deployment to Latest Task)
         run: |
-          # Lista de serviços para atualizar
-          services=("api-gateway-service" "donation-core-service" "worker-hub-service")
+          # Mapeamento do nome do serviço para a sua respectiva Task Definition Family
+          declare -A service_tasks=(
+            ["api-gateway-service"]="api-gateway-task"
+            ["donation-core-service"]="donation-core-task"
+            ["worker-hub-service"]="worker-hub-task"
+          )
           
-          for service in "${services[@]}"; do
-            echo "🚀 Atualizando serviço: $service..."
+          for service in "${!service_tasks[@]}"; do
+            family="${service_tasks[$service]}"
+            
+            echo "🚀 Buscando a última task definition para a família: $family..."
+            LATEST_TASK_DEF=$(aws ecs describe-task-definition \
+              --task-definition $family \
+              --query 'taskDefinition.taskDefinitionArn' \
+              --output text)
+            
+            echo "✅ Atualizando $service para usar a task $LATEST_TASK_DEF..."
             aws ecs update-service \
               --cluster transparencia-agil-cluster \
               --service $service \
+              --task-definition $LATEST_TASK_DEF \
               --force-new-deployment \
               --region us-east-1
           done
