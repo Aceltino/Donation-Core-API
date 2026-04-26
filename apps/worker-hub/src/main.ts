@@ -16,13 +16,13 @@ async function bootstrap() {
         new winston.transports.Console({
           format: winston.format.combine(
             winston.format.timestamp(),
-            newrelicFormatter() // Isso injeta os metadados do New Relic em cada linha de log
+            newrelicFormatter()
           ),
         }),
       ],
     }),
   });
 
-  await app.listen(process.env.PORTWORKER ?? 3002);
+  await app.listen(process.env.PORTWORKER ?? 3000);
 }
 void bootstrap();
